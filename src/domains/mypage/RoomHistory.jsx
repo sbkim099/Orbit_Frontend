@@ -238,9 +238,9 @@ const RoomHistory = () => {
   const isTimeInvalid = editForm.startTime >= editForm.endTime;
 
   const timeSlots = [];
-  for (let i = 0; i <= 24; i++) {
+  for (let i = 7; i <= 21; i++) {
     timeSlots.push(`${String(i).padStart(2, '0')}:00`);
-    if (i < 24) timeSlots.push(`${String(i).padStart(2, '0')}:30`);
+    if (i < 21) timeSlots.push(`${String(i).padStart(2, '0')}:30`);
   }
 
   const updateDropdownPos = useCallback(() => {
@@ -549,7 +549,7 @@ const RoomHistory = () => {
                           {/* 18:00 제한
                           {timeSlots.map(time => {
                           */}
-                          {timeSlots.filter(t => t <= '23:30').map(time => {
+                          {timeSlots.filter(t => t <= '20:30').map(time => {
                             const isOccupied = isStartOccupied(time);
                             const isPast = isPastTime(time, editForm.date);
                             const isDisabled = isOccupied || isPast;
@@ -597,7 +597,7 @@ const RoomHistory = () => {
                           {/* 18:00 제한
                           {timeSlots.map(time => {
                           */}
-                          {timeSlots.filter(t => t >= '00:30' && t <= '24:00').map(time => {
+                          {timeSlots.filter(t => t >= '07:30' && t <= '21:00').map(time => {
                             const isOccupied = isEndOccupied(time);
                             const isPast = isPastTime(time, editForm.date);
                             const isDisabled = isOccupied || isPast;
