@@ -124,9 +124,9 @@ const MeetingRooms = () => {
     if (i < 18) timeSlots.push(`${String(i).padStart(2, '0')}:30`);
   }
   */
-  for (let i = 0; i <= 24; i++) {
+  for (let i = 7; i <= 21; i++) {
     timeSlots.push(`${String(i).padStart(2, '0')}:00`);
-    if (i < 24) timeSlots.push(`${String(i).padStart(2, '0')}:30`);
+    if (i < 21) timeSlots.push(`${String(i).padStart(2, '0')}:30`);
   }
 
   const handlePrevDay = () => {
@@ -183,7 +183,11 @@ const MeetingRooms = () => {
       : defaultEnd;
 
     if (endTime < time) {
-      endTime = '24:00';
+      endTime = '21:00';
+    }
+
+    if (endTime > '21:00') {
+      endTime = '21:00';
     }
 
     /* 18:00 제한
@@ -246,10 +250,10 @@ const MeetingRooms = () => {
       await alertWarning('예약 불가', '해당 시간에 이미 예약이 존재하거나 운영 시간을 벗어납니다.');
     }
     */
-    if (!hasOverlap && !isNextDay) {
+    if (!hasOverlap && finalEndStr <= '21:00' && !isNextDay) {
       setForm({ ...form, endTime: finalEndStr });
     } else {
-      await alertWarning('예약 불가', '해당 시간에 이미 예약이 존재하거나 당일(24:00)을 넘길 수 없습니다.');
+      await alertWarning('예약 불가', '해당 시간에 이미 예약이 존재하거나 운영 시간(21:00)을 벗어납니다.');
     }
   };
 
@@ -474,7 +478,7 @@ const MeetingRooms = () => {
             </div>
 
             <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2 md:pb-6">
-              <div className="min-w-[2600px] h-full flex flex-col relative pt-8 md:pt-10">
+              <div className="min-w-[1600px] h-full flex flex-col relative pt-8 md:pt-10">
                 <div className="absolute top-0 left-0 right-0 flex border-b border-gray-50 pb-2">
                   {timeSlots.map((time, idx) => (
                     <div key={idx} className="flex-1 text-[9px] md:text-[10px] font-bold text-gray-400 text-center">
@@ -488,7 +492,7 @@ const MeetingRooms = () => {
                     const isOccupied = isTimeOccupied(time);
                     const isPast = isPastTime(time, format(currentDate, 'yyyy-MM-dd'));
                     // const isEndTime = time >= '18:00'; // 18:00 제한
-                    const isEndTime = time >= '24:00';
+                    const isEndTime = time >= '21:00';
                     const isWeekendDay = isWeekend(currentDate);
                     const isDisabled = isOccupied || isEndTime || isWeekendDay;
 
@@ -601,7 +605,7 @@ const MeetingRooms = () => {
                     <label className="text-xs font-bold text-gray-400 uppercase ml-1 tracking-wider">예약자</label>
                     <div className="px-5 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-500 flex items-center gap-2">
                       <FontAwesomeIcon icon={faUser} className="text-gray-300" />
-                      {user?.id || '사용자'}
+                      {user?.name || '사용자'}
                     </div>
                   </div>
                 </div>
@@ -667,7 +671,7 @@ const MeetingRooms = () => {
                           {/* 18:00 제한
                           {timeSlots.filter(t => t <= '17:30').map(time => {
                           */}
-                          {timeSlots.filter(t => t <= '23:30').map(time => {
+                          {timeSlots.filter(t => t <= '20:30').map(time => {
                             const isOccupied = panelEvents.some(e =>
                               time >= getTime(e.start_dt) && time < getTime(e.end_dt)
                             );
@@ -715,7 +719,7 @@ const MeetingRooms = () => {
                           {/* 18:00 제한
                           {timeSlots.concat('18:30').filter(t => t >= '09:30' && t <= '18:00').map(time => {
                           */}
-                          {timeSlots.filter(t => t >= '00:30' && t <= '24:00').map(time => {
+                          {timeSlots.filter(t => t >= '07:30' && t <= '21:00').map(time => {
                             const isBeforeStart = time <= form.startTime;
                             const hasOverlap = panelEvents.some(event => {
                               return (form.startTime < getTime(event.end_dt) && time > getTime(event.start_dt));
@@ -761,7 +765,7 @@ const MeetingRooms = () => {
                       const hasOverlap = panelEvents.some(event => {
                         return (form.startTime < getTime(event.end_dt) && finalEndStr > getTime(event.start_dt));
                       });
-                      isInvalid = hasOverlap || isNextDay;
+                      isInvalid = hasOverlap || isNextDay || finalEndStr > '21:00';
                     }
 
                     return (
