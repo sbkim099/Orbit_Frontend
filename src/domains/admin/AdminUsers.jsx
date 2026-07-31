@@ -278,37 +278,6 @@ const AdminUsers = () => {
     });
   };
 
-  // 상태 변경 핸들러
-  // const handleStatusChange = (e, upUsersSeq, newStatus) => {
-  //   e.stopPropagation(); // 행 클릭 이벤트 방지
-
-  //   // 서버로 보낼 상태값과 UI에 표시할 한글 상태값 매핑
-  //   const statusMap = {
-  //     'ACTIVE': '재직',
-  //     'INACTIVE': '휴직',
-  //     'RETIRE': '퇴사',
-  //     'REJECTED': '퇴사'
-  //   };
-  //   const koreanStatus = statusMap[newStatus] || newStatus;
-
-  //   alertConfirm('상태 변경', `직원의 상태를 '${koreanStatus}'(으)로 변경하시겠습니까?`).then((result) => {
-  //     if (result.isConfirmed) {
-  //       updateUsersState(upUsersSeq, newStatus).then(() => {
-  //         // 1. 현재 페이지 데이터 다시 불러오기 (데이터와 상단 카운트 동시 갱신)
-  //         fetchEmployees(currentPage, searchKeyword, activeTab);
-
-  //         invalidateGroupData();
-
-  //         setEditingId(null); // 수정 완료 후 버튼 숨김
-  //         if (selectedUser?.users_seq === upUsersSeq) {
-  //           setSelectedUser(prev => ({ ...prev, status: koreanStatus }));
-  //         }
-  //         alertSuccess('변경 완료', `직원의 상태가 '${koreanStatus}'(으)로 성공적으로 변경되었습니다.`);
-  //       });
-  //     }
-  //   });
-  // };
-
   const normalizeStatus = (status) => {
     const statusMap = {
       '재직': 'ACTIVE',
