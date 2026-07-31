@@ -403,7 +403,7 @@ const MinutesList = () => {
       decisions: newMinutes.decisions,
       todos: newMinutes.todos,
       host_users_id: newMinutes.hostObj?.id,
-      is_shared: newMinutes.is_shared,
+      is_shared: newMinutes.is_shared ?? 'N',
       attendees: newMinutes.attendees
         .filter(emp => (emp.users_id || emp.id) !== newMinutes.hostObj?.id)
         .map(emp => ({ users_id: emp.id }))
@@ -563,7 +563,7 @@ const MinutesList = () => {
       title: '', meeting_dt: '', start_time: '', end_time: '',
       main_content: '', decisions: '', todos: '',
       users_id: user?.users_id || '',
-      host_users_id: '', hostObj: null, attendees: []
+      host_users_id: '', hostObj: null, attendees: [], is_shared: 'N'
     });
     setErrors({ title: false, meeting_dt: false, start_time: false, end_time: false, time_order: false, main_content: false, attendees: false, host: false });
     setIsCreating(true);
