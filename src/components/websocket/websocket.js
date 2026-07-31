@@ -116,7 +116,7 @@ export const connectSocket = (usersId) => {
 
                         // 회원가입 신청 알림
                         case "SIGNUP":
-                            showToast(noti.content, "🧑‍💼");
+                            showToast(noti.content, "🔔");
                             break;
 
                         // 연장근무 신청 알림
