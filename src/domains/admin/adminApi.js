@@ -13,9 +13,10 @@ export const getHrInfo = (id) => maxios.get("/admin/hr/getHrInfo", { params: { i
 export const getAllUsers = (page, keyword, status) => maxios.get("/admin/hr/getAllUsers", {
     params: { page: page, keyword: keyword, status: status }
 });
-export const updateUsersState = (upUsersSeq, newStatus) => maxios.put("/admin/hr/updateUsersState", {
+export const updateUsersState = (upUsersSeq, newStatus, statusDate) => maxios.put("/admin/hr/updateUsersState", {
     users_seq: upUsersSeq,
-    status: newStatus
+    status: newStatus,
+    status_date : statusDate || null
 });
 export const updateUsersInfo = (usersSeq, editForm) => maxios.put("/admin/hr/updateUsersInfo", {
     users_seq: usersSeq,
