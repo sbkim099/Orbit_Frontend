@@ -602,84 +602,99 @@ const AdminUsers = () => {
                       </td>
 
                       <td
-                        className="hidden sm:table-cell py-1 sm:py-4 pl-4 sm:pl-0 text-left sm:text-center sm:align-middle"
+                        className={`py-1 sm:py-4 pl-4 sm:pl-0 text-left sm:text-center sm:align-middle
+                          ${editingId === emp.users_seq
+                            ? 'block sm:table-cell'
+                            : 'hidden sm:table-cell'
+                          }`}
                         onClick={(e) => handleStatusAreaClick(e, emp)}
                       >
                         {editingId === emp.users_seq ? (
-                          <div className="status-edit-area relative w-[90px] mx-auto">
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setIsStatusOpen(prev => !prev);
-                              }}
-                              className="w-[75px] h-7 px-3 bg-white border border-slate-200 rounded-xl text-[10px] text-slate-600 font-semibold flex items-center justify-center gap-3 cursor-pointer transition-all hover:border-[#3530B8]"
-                            >
-                              <span>
-                                {editStatus === 'ACTIVE'
-                                  ? '재직'
-                                  : editStatus === 'INACTIVE'
-                                    ? '휴직'
-                                    : '퇴사'}
-                              </span>
+                          <div className="flex items-center gap-2 sm:block">
+                            <span className="inline sm:hidden text-slate-300 text-[11px]">
+                              상태:
+                            </span>
 
-                              <svg
-                                className={`w-3 h-3 text-slate-400 transition-transform ${isStatusOpen ? 'rotate-180' : ''
-                                  }`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                            <div className="status-edit-area relative w-[75px] inline-block sm:block sm:mx-auto">
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsStatusOpen(prev => !prev);
+                                }}
+                                className="w-[75px] h-7 px-3 bg-white border border-slate-200
+                     rounded-xl text-[10px] text-slate-600 font-semibold
+                     flex items-center justify-center gap-3 cursor-pointer
+                     transition-all hover:border-[#3530B8]"
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 9l-7 7-7-7"
-                                />
-                              </svg>
-                            </div>
+                                <span>
+                                  {editStatus === 'ACTIVE'
+                                    ? '재직'
+                                    : editStatus === 'INACTIVE'
+                                      ? '휴직'
+                                      : '퇴사'}
+                                </span>
 
-                            {isStatusOpen && (
-                              <div className="absolute top-full left-0 w-[75px] mt-1 bg-white rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-50 overflow-hidden border border-slate-100">
-                                {[
-                                  { value: 'ACTIVE', label: '재직' },
-                                  { value: 'INACTIVE', label: '휴직' },
-                                  { value: 'RETIRE', label: '퇴사' }
-                                ].map(option => (
-                                  <div
-                                    key={option.value}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-
-                                      setEditStatus(option.value);
-                                      setIsStatusOpen(false);
-                                      setStatusDateError('');
-
-                                      if (option.value === 'INACTIVE') {
-                                        setEditStatusDate(
-                                          emp.leave_date
-                                            ? String(emp.leave_date).split(' ')[0]
-                                            : ''
-                                        );
-                                      } else if (option.value === 'RETIRE') {
-                                        setEditStatusDate(
-                                          emp.resign_date
-                                            ? String(emp.resign_date).split(' ')[0]
-                                            : ''
-                                        );
-                                      } else {
-                                        setEditStatusDate('');
-                                      }
-                                    }}
-                                    className={`px-4 py-2 text-xs cursor-pointer transition-colors ${editStatus === option.value
-                                      ? 'bg-[#F0F4FF] text-[#3530B8] font-bold'
-                                      : 'text-slate-600 hover:bg-[#F0F4FF] hover:text-[#3530B8]'
-                                      }`}
-                                  >
-                                    {option.label}
-                                  </div>
-                                ))}
+                                <svg
+                                  className={`w-3 h-3 text-slate-400 transition-transform ${isStatusOpen ? 'rotate-180' : ''
+                                    }`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 9l-7 7-7-7"
+                                  />
+                                </svg>
                               </div>
-                            )}
+
+                              {isStatusOpen && (
+                                <div className="absolute top-full left-0 w-[75px] mt-1 bg-white
+                          rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.15)]
+                          z-50 overflow-hidden border border-slate-100">
+                                  {[
+                                    { value: 'ACTIVE', label: '재직' },
+                                    { value: 'INACTIVE', label: '휴직' },
+                                    { value: 'RETIRE', label: '퇴사' }
+                                  ].map(option => (
+                                    <div
+                                      key={option.value}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+
+                                        setEditStatus(option.value);
+                                        setIsStatusOpen(false);
+                                        setStatusDateError('');
+
+                                        if (option.value === 'INACTIVE') {
+                                          setEditStatusDate(
+                                            emp.leave_date
+                                              ? String(emp.leave_date).split(' ')[0]
+                                              : ''
+                                          );
+                                        } else if (option.value === 'RETIRE') {
+                                          setEditStatusDate(
+                                            emp.resign_date
+                                              ? String(emp.resign_date).split(' ')[0]
+                                              : ''
+                                          );
+                                        } else {
+                                          setEditStatusDate('');
+                                        }
+                                      }}
+                                      className={`px-4 py-2 text-xs cursor-pointer transition-colors ${editStatus === option.value
+                                          ? 'bg-[#F0F4FF] text-[#3530B8] font-bold'
+                                          : 'text-slate-600 hover:bg-[#F0F4FF] hover:text-[#3530B8]'
+                                        }`}
+                                    >
+                                      {option.label}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <span
