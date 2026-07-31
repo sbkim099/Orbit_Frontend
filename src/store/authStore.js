@@ -1,4 +1,6 @@
 ﻿import { create } from 'zustand';
+import useUserStore from './userStore';
+import useNotificationStore from './useNotificationStore';
 
 const useAuthStore = create(set => ({
     token: sessionStorage.getItem("token") || null,
@@ -8,6 +10,10 @@ const useAuthStore = create(set => ({
     },
     logout: () => {
         sessionStorage.removeItem("token");
+
+        useUserStore.getState().clearUser();
+        useNotificationStore.getState().clearNotifications();
+        
         set({ token: null });
     }
 }));
