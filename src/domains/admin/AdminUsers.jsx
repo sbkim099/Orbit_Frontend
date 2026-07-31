@@ -40,6 +40,10 @@ const AdminUsers = () => {
   const [currentPage, setCurrentPage] = useState(1);
   // 현재 수정 중인 직원 ID 관리
   const [editingId, setEditingId] = useState(null);
+  const [editStatus, setEditStatus] = useState('');
+  const [editStatusDate, setEditStatusDate] = useState('');
+  const [statusDateError, setStatusDateError] = useState('');
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
   // 상세 정보를 볼 직원 관리
   const [selectedUser, setSelectedUser] = useState(null);
   // 상세 정보 수정 모드 관리
@@ -88,21 +92,30 @@ const AdminUsers = () => {
   // 외부 클릭 시 수정 모드 및 드롭다운 해제
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (editingId !== null && !e.target.closest('.status-edit-buttons') && !e.target.closest('.edit-trigger-btn') && !e.target.closest('.mobile-edit-btn')) {
-        setEditingId(null);
+      if (
+        isStatusOpen &&
+        !e.target.closest('.status-edit-area')
+      ) {
+        setIsStatusOpen(false);
       }
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        if (!e.target.closest('.custom-dropdown')) {
-          setIsDeptOpen(false);
-          setIsRankOpen(false);
-          setIsPermissionOpen(false);
-          setIsHrManagerOpen(false);
-        }
+
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target)
+      ) {
+        setIsDeptOpen(false);
+        setIsRankOpen(false);
+        setIsPermissionOpen(false);
+        setIsHrManagerOpen(false);
       }
     };
+
     document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [editingId]);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isStatusOpen]);
 
   // 직원 정보 및 부서/직급 리스트 출력
   useEffect(() => {
@@ -125,18 +138,31 @@ const AdminUsers = () => {
     }
   }, [selectedUser]);
 
-  const fetchEmployees = (page = 1, keyword = "", tab = "전체") => {
+  const fetchEmployees = (
+    page = 1,
+    keyword = '',
+    tab = '전체'
+  ) => {
     const statusMap = {
-      '재직': 'ACTIVE',
-      '휴직': 'INACTIVE',
-      '퇴사': 'RETIRE',
-      '전체': ''
+      재직: 'ACTIVE',
+      휴직: 'INACTIVE',
+      퇴사: 'RETIRE',
+      전체: ''
     };
-    getAllUsers(page, keyword, statusMap[tab]).then(resp => {
+
+    return getAllUsers(
+      page,
+      keyword,
+      statusMap[tab]
+    ).then(resp => {
       setEmployees(resp.data.users || []);
       setTotalCount(resp.data.totalCount || 0);
+
       setStatusCounts({
-        전체: (resp.data.activeCount || 0) + (resp.data.inactiveCount || 0) + (resp.data.retireCount || 0),
+        전체:
+          (resp.data.activeCount || 0) +
+          (resp.data.inactiveCount || 0) +
+          (resp.data.retireCount || 0),
         재직: resp.data.activeCount || 0,
         휴직: resp.data.inactiveCount || 0,
         퇴사: resp.data.retireCount || 0
@@ -253,34 +279,198 @@ const AdminUsers = () => {
   };
 
   // 상태 변경 핸들러
-  const handleStatusChange = (e, upUsersSeq, newStatus) => {
-    e.stopPropagation(); // 행 클릭 이벤트 방지
+  // const handleStatusChange = (e, upUsersSeq, newStatus) => {
+  //   e.stopPropagation(); // 행 클릭 이벤트 방지
 
-    // 서버로 보낼 상태값과 UI에 표시할 한글 상태값 매핑
+  //   // 서버로 보낼 상태값과 UI에 표시할 한글 상태값 매핑
+  //   const statusMap = {
+  //     'ACTIVE': '재직',
+  //     'INACTIVE': '휴직',
+  //     'RETIRE': '퇴사',
+  //     'REJECTED': '퇴사'
+  //   };
+  //   const koreanStatus = statusMap[newStatus] || newStatus;
+
+  //   alertConfirm('상태 변경', `직원의 상태를 '${koreanStatus}'(으)로 변경하시겠습니까?`).then((result) => {
+  //     if (result.isConfirmed) {
+  //       updateUsersState(upUsersSeq, newStatus).then(() => {
+  //         // 1. 현재 페이지 데이터 다시 불러오기 (데이터와 상단 카운트 동시 갱신)
+  //         fetchEmployees(currentPage, searchKeyword, activeTab);
+
+  //         invalidateGroupData();
+
+  //         setEditingId(null); // 수정 완료 후 버튼 숨김
+  //         if (selectedUser?.users_seq === upUsersSeq) {
+  //           setSelectedUser(prev => ({ ...prev, status: koreanStatus }));
+  //         }
+  //         alertSuccess('변경 완료', `직원의 상태가 '${koreanStatus}'(으)로 성공적으로 변경되었습니다.`);
+  //       });
+  //     }
+  //   });
+  // };
+
+  const normalizeStatus = (status) => {
     const statusMap = {
-      'ACTIVE': '재직',
-      'INACTIVE': '휴직',
-      'RETIRE': '퇴사',
-      'REJECTED': '퇴사'
+      '재직': 'ACTIVE',
+      '휴직': 'INACTIVE',
+      '퇴사': 'RETIRE',
+      'REJECTED': 'RETIRE'
     };
-    const koreanStatus = statusMap[newStatus] || newStatus;
 
-    alertConfirm('상태 변경', `직원의 상태를 '${koreanStatus}'(으)로 변경하시겠습니까?`).then((result) => {
-      if (result.isConfirmed) {
-        updateUsersState(upUsersSeq, newStatus).then(() => {
-          // 1. 현재 페이지 데이터 다시 불러오기 (데이터와 상단 카운트 동시 갱신)
-          fetchEmployees(currentPage, searchKeyword, activeTab);
+    return statusMap[status] || status;
+  };
 
-          invalidateGroupData();
+  const handleStartStatusEdit = (e, emp) => {
+    e.stopPropagation();
 
-          setEditingId(null); // 수정 완료 후 버튼 숨김
-          if (selectedUser?.users_seq === upUsersSeq) {
-            setSelectedUser(prev => ({ ...prev, status: koreanStatus }));
-          }
-          alertSuccess('변경 완료', `직원의 상태가 '${koreanStatus}'(으)로 성공적으로 변경되었습니다.`);
-        });
+    const currentStatus = normalizeStatus(emp.status);
+
+    let currentDate = '';
+
+    if (currentStatus === 'INACTIVE') {
+      currentDate = emp.leave_date
+        ? String(emp.leave_date).split(' ')[0]
+        : '';
+    } else if (currentStatus === 'RETIRE') {
+      currentDate = emp.resign_date
+        ? String(emp.resign_date).split(' ')[0]
+        : '';
+    }
+
+    setEditingId(emp.users_seq);
+    setEditStatus(currentStatus);
+    setEditStatusDate(currentDate);
+    setStatusDateError('');
+    setIsStatusOpen(false);
+  };
+
+  const handleStatusAreaClick = (e, emp) => {
+    if (editingId === emp.users_seq) {
+      e.stopPropagation();
+    }
+  };
+
+  const handleCancelStatusEdit = (e) => {
+    e.stopPropagation();
+
+    setEditingId(null);
+    setEditStatus('');
+    setEditStatusDate('');
+    setStatusDateError('');
+    setIsStatusOpen(false);
+  };
+
+  const validateStatusDate = () => {
+    if (editStatus === 'ACTIVE') {
+      return '';
+    }
+
+    if (!editStatusDate) {
+      return editStatus === 'INACTIVE'
+        ? '휴직일자를 입력해주세요.'
+        : '퇴사일자를 입력해주세요.';
+    }
+
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+    if (!dateRegex.test(editStatusDate)) {
+      return 'YYYYMMDD 형식으로 입력해주세요.';
+    }
+
+    const [year, month, day] =
+      editStatusDate.split('-').map(Number);
+
+    const inputDate = new Date(year, month - 1, day);
+
+    const isRealDate =
+      !Number.isNaN(inputDate.getTime()) &&
+      inputDate.getFullYear() === year &&
+      inputDate.getMonth() + 1 === month &&
+      inputDate.getDate() === day;
+
+    if (!isRealDate || year < 1900) {
+      return '존재하지 않는 날짜입니다.';
+    }
+
+    return '';
+  };
+
+  const handleStatusChange = async (e, emp) => {
+    e.stopPropagation();
+
+    const dateError = validateStatusDate();
+
+    if (dateError) {
+      setStatusDateError(dateError);
+      return;
+    }
+
+    setStatusDateError('');
+
+    const statusMap = {
+      ACTIVE: '재직',
+      INACTIVE: '휴직',
+      RETIRE: '퇴사'
+    };
+
+    const koreanStatus = statusMap[editStatus];
+
+    const result = await alertConfirm(
+      '상태 변경',
+      `직원의 상태를 '${koreanStatus}'(으)로 변경하시겠습니까?`
+    );
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await updateUsersState(
+        emp.users_seq,
+        editStatus,
+        editStatus === 'ACTIVE' ? null : editStatusDate
+      );
+
+      await fetchEmployees(
+        currentPage,
+        searchKeyword,
+        activeTab
+      );
+
+      invalidateGroupData();
+
+      if (selectedUser?.users_seq === emp.users_seq) {
+        setSelectedUser(prev => ({
+          ...prev,
+          status: koreanStatus,
+          leave_date:
+            editStatus === 'INACTIVE'
+              ? editStatusDate
+              : null,
+          resign_date:
+            editStatus === 'RETIRE'
+              ? editStatusDate
+              : null
+        }));
       }
-    });
+
+      setEditingId(null);
+      setEditStatus('');
+      setEditStatusDate('');
+      setStatusDateError('');
+      setIsStatusOpen(false);
+
+      alertSuccess(
+        '변경 완료',
+        `직원의 상태가 '${koreanStatus}'(으)로 성공적으로 변경되었습니다.`
+      );
+    } catch (error) {
+      console.error('상태 변경 실패:', error);
+
+      alertError(
+        '변경 실패',
+        error.response?.data?.message ||
+        '직원 상태 변경 중 오류가 발생했습니다.'
+      );
+    }
   };
 
   return (
@@ -411,82 +601,265 @@ const AdminUsers = () => {
                         {emp.rank_name}
                       </td>
 
-                      <td className="hidden sm:table-cell py-1 sm:py-4 pl-4 sm:pl-0 text-left sm:text-center sm:align-middle">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-center whitespace-nowrap ${getStatusLabel(emp.status) === '재직' ? 'bg-[#F0FDF4] text-[#10B981]' :
-                          getStatusLabel(emp.status) === '휴직' ? 'bg-[#FFF9F0] text-[#FF9800]' :
-                            'bg-[#FFF0F0] text-[#FF4D4F]'
-                          }`}>
-                          {getStatusLabel(emp.status)}
-                        </span>
-                      </td>
-
-                      <td className="py-1 sm:py-4 pl-4 sm:pl-0 text-[0.6875rem] sm:text-xs text-slate-400 font-mono block sm:table-cell sm:align-middle">
-                        <span className="inline sm:hidden text-slate-300 mr-1">
-                          {activeTab === '전체' ? '기준일자:' : activeTab === '퇴사' ? '퇴사일자:' : activeTab === '휴직' ? '휴직일자:' : '입사일:'}
-                        </span>
-                        {(() => {
-                          const label = getStatusLabel(emp.status);
-                          const isAllTab = activeTab === '전체';
-                          if (label === '퇴사') {
-                            const rDate = emp.resignDate || emp.resign_date || emp.retire_date || emp.retireDate;
-                            return (
-                              <>
-                                {isAllTab && <span className="text-[9px] text-slate-400 mr-1">[퇴사]</span>}
-                                {rDate ? String(rDate).split(' ')[0] : '-'}
-                              </>
-                            );
-                          }
-                          if (label === '휴직') {
-                            const uDate = emp.updateAt || emp.update_at || emp.updatedAt || emp.updated_at;
-                            return (
-                              <>
-                                {isAllTab && <span className="text-[9px] text-slate-400 mr-1">[휴직]</span>}
-                                {uDate ? String(uDate).split(' ')[0] : '-'}
-                              </>
-                            );
-                          }
-                          return (
-                            <>
-                              {isAllTab && <span className="text-[9px] text-slate-400 mr-1">[입사]</span>}
-                              {emp.hire_date ? String(emp.hire_date).split(' ')[0] : '-'}
-                            </>
-                          );
-                        })()}
-                      </td>
-
-                      <td className="py-2 px-2 block sm:table-cell text-left sm:text-center w-fit sm:w-[150px] sm:min-w-[150px] clear-both mt-2">
+                      <td
+                        className="hidden sm:table-cell py-1 sm:py-4 pl-4 sm:pl-0 text-left sm:text-center sm:align-middle"
+                        onClick={(e) => handleStatusAreaClick(e, emp)}
+                      >
                         {editingId === emp.users_seq ? (
-                          <div className="status-edit-buttons flex gap-1 justify-start sm:justify-center w-full whitespace-nowrap">
+                          <div className="status-edit-area relative w-[90px] mx-auto">
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsStatusOpen(prev => !prev);
+                              }}
+                              className="w-[75px] h-7 px-3 bg-white border border-slate-200 rounded-xl text-[10px] text-slate-600 font-semibold flex items-center justify-center gap-3 cursor-pointer transition-all hover:border-[#3530B8]"
+                            >
+                              <span>
+                                {editStatus === 'ACTIVE'
+                                  ? '재직'
+                                  : editStatus === 'INACTIVE'
+                                    ? '휴직'
+                                    : '퇴사'}
+                              </span>
+
+                              <svg
+                                className={`w-3 h-3 text-slate-400 transition-transform ${isStatusOpen ? 'rotate-180' : ''
+                                  }`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 9l-7 7-7-7"
+                                />
+                              </svg>
+                            </div>
+
+                            {isStatusOpen && (
+                              <div className="absolute top-full left-0 w-[75px] mt-1 bg-white rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-50 overflow-hidden border border-slate-100">
+                                {[
+                                  { value: 'ACTIVE', label: '재직' },
+                                  { value: 'INACTIVE', label: '휴직' },
+                                  { value: 'RETIRE', label: '퇴사' }
+                                ].map(option => (
+                                  <div
+                                    key={option.value}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+
+                                      setEditStatus(option.value);
+                                      setIsStatusOpen(false);
+                                      setStatusDateError('');
+
+                                      if (option.value === 'INACTIVE') {
+                                        setEditStatusDate(
+                                          emp.leave_date
+                                            ? String(emp.leave_date).split(' ')[0]
+                                            : ''
+                                        );
+                                      } else if (option.value === 'RETIRE') {
+                                        setEditStatusDate(
+                                          emp.resign_date
+                                            ? String(emp.resign_date).split(' ')[0]
+                                            : ''
+                                        );
+                                      } else {
+                                        setEditStatusDate('');
+                                      }
+                                    }}
+                                    className={`px-4 py-2 text-xs cursor-pointer transition-colors ${editStatus === option.value
+                                      ? 'bg-[#F0F4FF] text-[#3530B8] font-bold'
+                                      : 'text-slate-600 hover:bg-[#F0F4FF] hover:text-[#3530B8]'
+                                      }`}
+                                  >
+                                    {option.label}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-center whitespace-nowrap ${getStatusLabel(emp.status) === '재직'
+                              ? 'bg-[#F0FDF4] text-[#10B981]'
+                              : getStatusLabel(emp.status) === '휴직'
+                                ? 'bg-[#FFF9F0] text-[#FF9800]'
+                                : 'bg-[#FFF0F0] text-[#FF4D4F]'
+                              }`}
+                          >
+                            {getStatusLabel(emp.status)}
+                          </span>
+                        )}
+                      </td>
+
+                      <td
+                        className="py-1 sm:py-4 pl-4 sm:pl-0 text-[0.6875rem] sm:text-xs text-slate-400 font-mono block sm:table-cell sm:align-middle"
+                        onClick={(e) => handleStatusAreaClick(e, emp)}
+                      >
+                        <span className="inline sm:hidden text-slate-300 mr-1">
+                          {editingId === emp.users_seq
+                            ? editStatus === 'INACTIVE'
+                              ? '휴직일자:'
+                              : editStatus === 'RETIRE'
+                                ? '퇴사일자:'
+                                : '입사일:'
+                            : activeTab === '전체'
+                              ? '기준일자:'
+                              : activeTab === '퇴사'
+                                ? '퇴사일자:'
+                                : activeTab === '휴직'
+                                  ? '휴직일자:'
+                                  : '입사일:'}
+                        </span>
+
+                        {editingId === emp.users_seq ? (
+                          editStatus === 'ACTIVE' ? (
+                            <span>
+                              {emp.hire_date
+                                ? String(emp.hire_date).split(' ')[0]
+                                : '-'}
+                            </span>
+                          ) : (
+                            <div className="status-edit-area flex flex-col items-start">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={editStatusDate}
+                                maxLength={10}
+                                placeholder="YYYYMMDD 입력"
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                  const onlyNums = e.target.value
+                                    .replace(/[^\d]/g, '')
+                                    .slice(0, 8);
+
+                                  let formattedDate = onlyNums;
+
+                                  if (onlyNums.length > 4 && onlyNums.length <= 6) {
+                                    formattedDate =
+                                      `${onlyNums.slice(0, 4)}-${onlyNums.slice(4)}`;
+                                  } else if (onlyNums.length > 6) {
+                                    formattedDate =
+                                      `${onlyNums.slice(0, 4)}-${onlyNums.slice(4, 6)}-${onlyNums.slice(6)}`;
+                                  }
+
+                                  setEditStatusDate(formattedDate);
+
+                                  if (statusDateError) {
+                                    setStatusDateError('');
+                                  }
+                                }}
+                                className={`w-[125px] h-7 px-3 bg-slate-50 border rounded-xl
+                                  text-[10px] font-mono font-semibold text-slate-700 outline-none transition-all
+                                  ${statusDateError
+                                    ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+                                    : 'border-slate-200 focus:ring-2 focus:ring-[#3530B8]/20 focus:border-[#3530B8]'
+                                  }`}
+                              />
+
+                              {statusDateError && (
+                                <p className="mt-1 ml-1 text-[9px] leading-tight text-red-500 font-medium whitespace-nowrap">
+                                  {statusDateError}
+                                </p>
+                              )}
+                            </div>
+                          )
+                        ) : (
+                          (() => {
+                            const label = getStatusLabel(emp.status);
+                            const isAllTab = activeTab === '전체';
+
+                            if (label === '퇴사') {
+                              const resignDate = emp.resign_date;
+
+                              return (
+                                <>
+                                  {isAllTab && (
+                                    <span className="text-[9px] text-slate-400 mr-1">
+                                      [퇴사]
+                                    </span>
+                                  )}
+
+                                  {resignDate
+                                    ? String(resignDate).split(' ')[0]
+                                    : '-'}
+                                </>
+                              );
+                            }
+
+                            if (label === '휴직') {
+                              const leaveDate = emp.leave_date;
+
+                              return (
+                                <>
+                                  {isAllTab && (
+                                    <span className="text-[9px] text-slate-400 mr-1">
+                                      [휴직]
+                                    </span>
+                                  )}
+
+                                  {leaveDate
+                                    ? String(leaveDate).split(' ')[0]
+                                    : '-'}
+                                </>
+                              );
+                            }
+
+                            return (
+                              <>
+                                {isAllTab && (
+                                  <span className="text-[9px] text-slate-400 mr-1">
+                                    [입사]
+                                  </span>
+                                )}
+
+                                {emp.hire_date
+                                  ? String(emp.hire_date).split(' ')[0]
+                                  : '-'}
+                              </>
+                            );
+                          })()
+                        )}
+                      </td>
+
+                      <td
+                        className="py-2 px-2 block sm:table-cell text-left sm:text-center w-fit sm:w-[150px] sm:min-w-[150px] clear-both mt-2"
+                        onClick={(e) => handleStatusAreaClick(e, emp)}
+                      >
+                        {editingId === emp.users_seq ? (
+                          <div className="status-edit-area status-edit-buttons flex gap-1 justify-start sm:justify-center w-full whitespace-nowrap">
                             <button
                               type="button"
-                              onClick={(e) => { e.stopPropagation(); handleStatusChange(e, emp.users_seq, 'ACTIVE'); }}
-                              className=" px-2 py-1 text-[10px] font-semibold text-[#10B981] bg-white border border-[#10B981]/30 rounded-full">
-                              재직
+                              onClick={(e) => handleStatusChange(e, emp)}
+                              className="px-3 py-1 text-[10px] font-semibold text-white bg-[#3530B8] rounded-full"
+                            >
+                              완료
                             </button>
+
                             <button
                               type="button"
-                              onClick={(e) => { e.stopPropagation(); handleStatusChange(e, emp.users_seq, 'INACTIVE'); }}
-                              className="px-2 py-1 text-[10px] font-semibold text-[#FF9800] bg-white border border-[#FF9800]/30 rounded-full">
-                              휴직
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); handleStatusChange(e, emp.users_seq, 'RETIRE'); }}
-                              className="px-2 py-1 text-[10px] font-semibold text-[#FF4D4F] bg-white border border-[#FF4D4F]/30 rounded-full">
-                              퇴사
+                              onClick={handleCancelStatusEdit}
+                              className="px-3 py-1 text-[10px] font-semibold text-slate-500 bg-white border border-slate-300 rounded-full"
+                            >
+                              취소
                             </button>
                           </div>
-                        ) : (getStatusLabel(emp.status) !== '퇴사' || isOpsManager || isHRManager) ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingId(emp.users_seq);
-                            }}
-                            className="edit-trigger-btn w-max px-7 py-1 text-xs font-bold text-slate-600 bg-white border border-slate-300 rounded-full hover:bg-slate-50 shadow-sm">
-                            수정
-                          </button>
-                        ) : null}
+                        ) : (
+                          (getStatusLabel(emp.status) !== '퇴사' ||
+                            isOpsManager ||
+                            isHRManager) && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleStartStatusEdit(e, emp)}
+                              className="edit-trigger-btn w-max px-7 py-1 text-xs font-bold text-slate-600 bg-white border border-slate-300 rounded-full hover:bg-slate-50 shadow-sm"
+                            >
+                              수정
+                            </button>
+                          )
+                        )}
                       </td>
                     </tr>
                   ))
@@ -795,23 +1168,27 @@ const AdminUsers = () => {
                     </div>
                     {getStatusLabel(selectedUser.status) === '휴직' && (
                       <div className="flex justify-between items-center mt-4">
-                        <span className="text-xs text-slate-500 min-w-[80px] whitespace-nowrap">휴직 처리일</span>
+                        <span className="text-xs text-slate-500 min-w-[80px] whitespace-nowrap">
+                          휴직일
+                        </span>
+
                         <span className="text-xs font-bold text-slate-700 font-mono">
-                          {(() => {
-                            const uDate = selectedUser.updateAt || selectedUser.update_at || selectedUser.updatedAt || selectedUser.updated_at;
-                            return uDate ? String(uDate).split(' ')[0] : '-';
-                          })()}
+                          {selectedUser.leave_date
+                            ? String(selectedUser.leave_date).split(' ')[0]
+                            : '-'}
                         </span>
                       </div>
                     )}
                     {getStatusLabel(selectedUser.status) === '퇴사' && (
                       <div className="flex justify-between items-center mt-4">
-                        <span className="text-xs text-slate-500 min-w-[80px] whitespace-nowrap">퇴사일</span>
+                        <span className="text-xs text-slate-500 min-w-[80px] whitespace-nowrap">
+                          퇴사일
+                        </span>
+
                         <span className="text-xs font-bold text-slate-700 font-mono">
-                          {(() => {
-                            const rDate = selectedUser.resignDate || selectedUser.resign_date || selectedUser.retire_date || selectedUser.retireDate;
-                            return rDate ? String(rDate).split(' ')[0] : '-';
-                          })()}
+                          {selectedUser.resign_date
+                            ? String(selectedUser.resign_date).split(' ')[0]
+                            : '-'}
                         </span>
                       </div>
                     )}
